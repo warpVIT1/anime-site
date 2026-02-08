@@ -1,0 +1,20 @@
+{
+  "extends": ["next/core-web-vitals"],
+  "rules": {
+    "react-hooks/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": "warn",
+    "@next/next/no-img-element": "warn",
+    "@next/next/no-html-link-for-pages": "warn",
+    "no-console": ["warn", { "allow": ["warn", "error", "debug"] }],
+    "prefer-const": "warn",
+    "no-unused-vars": "off",
+    "react/display-name": "off",
+    "react/prop-types": "off",
+    "react/no-unescaped-entities": "off"
+  },
+  "settings": {
+    "react": {
+      "version": "detect"
+    }
+  }
+}
