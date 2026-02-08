@@ -1,4 +1,4 @@
-// Типи для Kitsu API
+// Kitsu API types
 
 export interface KitsuAnime {
   id: string;

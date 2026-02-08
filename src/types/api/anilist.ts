@@ -1,4 +1,4 @@
-// Типи для AniList API (GraphQL)
+// AniList GraphQL API types
 
 export interface AniListAnime {
   id: number;

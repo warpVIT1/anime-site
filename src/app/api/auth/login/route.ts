@@ -10,70 +10,39 @@ import {
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { login, password } = body;
+    const { login, password } = await request.json();
 
-    // Валидация
     if (!login || !password) {
-      return NextResponse.json(
-        { error: 'Email/username and password are required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Email/username and password are required' }, { status: 400 });
     }
 
-    // Определяем тип входа (email или username)
     const isEmail = isValidEmail(login);
     const searchHash = createSearchHash(login);
 
-    // Поиск пользователя
     const user = await prisma.user.findFirst({
-      where: isEmail
-        ? { emailHash: searchHash }
-        : { usernameHash: searchHash },
+      where: isEmail ? { emailHash: searchHash } : { usernameHash: searchHash },
     });
 
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Invalid login or password' },
-        { status: 401 }
-      );
+    if (!user || !(await verifyPassword(password, user.passwordHash))) {
+      return NextResponse.json({ error: 'Invalid login or password' }, { status: 401 });
     }
 
-    // Проверка пароля
-    const isPasswordValid = await verifyPassword(password, user.passwordHash);
-
-    if (!isPasswordValid) {
-      return NextResponse.json(
-        { error: 'Invalid login or password' },
-        { status: 401 }
-      );
-    }
-
-    // Расшифровка данных для ответа
     const decryptedEmail = decryptData(user.email);
     const decryptedUsername = decryptData(user.username);
     const decryptedDisplayName = user.displayName ? decryptData(user.displayName) : decryptedUsername;
 
-    // Создание токена
     const token = await createToken({ userId: user.id, email: decryptedEmail });
 
-    // Удаление старых сессий и создание новой
+    // cleanup old sessions
     await prisma.session.deleteMany({
-      where: {
-        userId: user.id,
-        expiresAt: { lt: new Date() },
-      },
+      where: { userId: user.id, expiresAt: { lt: new Date() } },
     });
 
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
 
     await prisma.session.create({
-      data: {
-        userId: user.id,
-        token,
-        expiresAt,
-      },
+      data: { userId: user.id, token, expiresAt },
     });
 
     return NextResponse.json({
@@ -86,11 +55,8 @@ export async function POST(request: Request) {
       },
       token,
     });
-  } catch (error) {
-    console.error('Login error:', error);
-    return NextResponse.json(
-      { error: 'Server error' },
-      { status: 500 }
-    );
+  } catch (err) {
+    console.error('Login error:', err);
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }

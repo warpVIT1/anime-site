@@ -1,4 +1,4 @@
-// Типи для Jikan API (MyAnimeList)
+// Jikan API types (MAL wrapper)
 
 export interface JikanAnime {
   mal_id: number;

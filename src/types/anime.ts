@@ -1,53 +1,50 @@
-// Універсальний тип аніме для всіх API
-
 export interface Anime {
-  // ID з різних джерел
-  id: number | string;     // Може бути число або slug (як у YouTube)
-  slug?: string;           // URL-friendly ID
-  malId?: number;          // MyAnimeList ID
-  anilistId?: number;      // AniList ID
-  kitsuId?: string;        // Kitsu ID
+  // IDs from different sources
+  id: number | string;
+  slug?: string;
+  malId?: number;
+  anilistId?: number;
+  kitsuId?: string;
 
-  // Назви
-  title: string;           // Основна назва
-  titleOriginal?: string;  // Японська
-  titleEnglish?: string;   // Англійська
-  titleUkrainian?: string; // Українська (якщо є)
+  // titles
+  title: string;
+  titleOriginal?: string;
+  titleEnglish?: string;
+  titleUkrainian?: string;
 
-  // Зображення
+  // images
   poster: string;
   posterLarge?: string;
   banner?: string;
 
-  // Опис
+  // descriptions
   description?: string;
   synopsis?: string;
   background?: string;
 
-  // Базова інформація
+  // basic info
   year?: number;
   season?: 'winter' | 'spring' | 'summer' | 'fall';
   status: 'ongoing' | 'completed' | 'announced';
   type: 'tv' | 'movie' | 'ova' | 'ona' | 'special' | 'music';
 
-  // Епізоди
+  // episodes
   episodes?: number;
   episodesAired?: number;
-  duration?: number;        // в хвилинах
+  duration?: number;
 
-  // Рейтинги
-  score?: number;           // 0-10 або 0-100
+  // ratings
+  score?: number;
   scoredBy?: number;
   rank?: number;
   popularity?: number;
 
-  // Категорії
+  // categories
   genres: string[];
   studios: string[];
   demographics?: string[];
   themes?: string[];
 
-  // Трейлер
   trailer?: {
     id?: string;
     url?: string;
@@ -55,17 +52,14 @@ export interface Anime {
     site?: string;
   };
 
-  // Додаткова інформація
-  rating?: string;          // Віковий рейтинг (G, PG, PG-13, R, R+, Rx)
-  sourceType?: string;      // Джерело (Manga, Light novel, Visual novel, etc)
-  
-  // Наступний епізод (для онгоінгів)
+  rating?: string;
+  sourceType?: string;
+
   nextAiringEpisode?: {
     episode: number;
-    airingAt: number;       // Unix timestamp
+    airingAt: number;
   } | null;
 
-  // Сезони
   seasons?: Array<{
     id: number;
     number: number;
@@ -77,7 +71,6 @@ export interface Anime {
     malId?: number;
   }>;
 
-  // Метадані
   source: 'jikan' | 'anilist' | 'kitsu';
   url?: string;
   aired?: {

@@ -1,5 +1,3 @@
-// Unified API interface with multiple sources
-
 import type { Anime } from '@/types/anime';
 import * as jikan from './jikan';
 import * as anilist from './anilist';
@@ -7,236 +5,143 @@ import * as kitsu from './kitsu';
 import * as consumet from './consumet';
 import { processAnime } from '../translateAnime';
 
-// Error logging
-function logError(source: string, error: unknown) {
-  console.warn(`[API] ${source} failed:`, error);
-}
-
-// Process single anime with translation
-function processAnimeResult(anime: Anime): Anime {
+function process(anime: Anime): Anime {
   return processAnime(anime);
 }
 
-// Process multiple anime with translations
-function processAnimeResults(animeList: Anime[]): Anime[] {
-  return animeList.map(processAnime);
+function processList(list: Anime[]): Anime[] {
+  return list.map(processAnime);
 }
 
-// Get anime by ID with fallback
 export async function getAnimeById(id: number): Promise<Anime> {
-  let anime: Anime | null = null;
-
-  // Try Jikan first (most complete data)
+  // jikan first - most complete
   try {
-    anime = await jikan.getAnimeById(id);
-  } catch (error) {
-    logError('Jikan', error);
-  }
+    return process(await jikan.getAnimeById(id));
+  } catch {}
 
-  // Try AniList if Jikan failed
-  if (!anime) {
-    try {
-      anime = await anilist.getAnimeById(id);
-    } catch (error) {
-      logError('AniList', error);
-    }
-  }
+  try {
+    return process(await anilist.getAnimeById(id));
+  } catch {}
 
-  // Last resort - Kitsu
-  if (!anime) {
-    try {
-      anime = await kitsu.getAnimeById(id);
-    } catch (error) {
-      logError('Kitsu', error);
-      throw new Error(`Failed to fetch anime ${id} from all sources`);
-    }
+  try {
+    return process(await kitsu.getAnimeById(id));
+  } catch {
+    throw new Error(`Failed to fetch anime ${id}`);
   }
-
-  return processAnimeResult(anime);
 }
 
-// Search anime with fallback - Consumet first for best results
-export async function searchAnime(query: string, limit: number = 24): Promise<Anime[]> {
-  let results: Anime[] = [];
-
-  // Consumet first - aggregates multiple sources
+export async function searchAnime(query: string, limit = 24): Promise<Anime[]> {
   try {
-    results = await consumet.searchAnime(query, 1, limit);
-    if (results.length > 0) {
-      return processAnimeResults(results);
-    }
-  } catch (error) {
-    logError('Consumet search', error);
-  }
+    const res = await consumet.searchAnime(query, 1, limit);
+    if (res.length) return processList(res);
+  } catch {}
 
-  // Try Jikan
   try {
-    results = await jikan.searchAnime(query, limit);
-    if (results.length > 0) {
-      return processAnimeResults(results);
-    }
-  } catch (error) {
-    logError('Jikan search', error);
-  }
+    const res = await jikan.searchAnime(query, limit);
+    if (res.length) return processList(res);
+  } catch {}
 
-  // Then AniList
   try {
-    results = await anilist.searchAnime(query, limit);
-    if (results.length > 0) {
-      return processAnimeResults(results);
-    }
-  } catch (error) {
-    logError('AniList search', error);
-  }
+    const res = await anilist.searchAnime(query, limit);
+    if (res.length) return processList(res);
+  } catch {}
 
-  // Finally Kitsu
   try {
-    results = await kitsu.searchAnime(query, limit);
-    return processAnimeResults(results);
-  } catch (error) {
-    logError('Kitsu search', error);
+    return processList(await kitsu.searchAnime(query, limit));
+  } catch {
     return [];
   }
 }
 
-// Top anime with fallback - Consumet first for largest database
-export async function getTopAnime(page: number = 1, limit: number = 24): Promise<Anime[]> {
-  let results: Anime[] = [];
-
-  // Consumet first - largest database with covers
+export async function getTopAnime(page = 1, limit = 24): Promise<Anime[]> {
   try {
-    results = await consumet.getPopularAnime(page, limit);
-    if (results.length > 0) {
-      return processAnimeResults(results);
-    }
-  } catch (error) {
-    logError('Consumet popular', error);
-  }
-
-  // AniList fallback - has banner images
-  try {
-    results = await anilist.getTopAnime(limit);
-    if (results.length > 0) {
-      return processAnimeResults(results);
-    }
-  } catch (error) {
-    logError('AniList top', error);
-  }
-
-  // Fallback to Jikan
-  try {
-    results = await jikan.getTopAnime(page, limit);
-    return processAnimeResults(results);
-  } catch (error) {
-    logError('Jikan top', error);
-  }
+    const res = await consumet.getPopularAnime(page, limit);
+    if (res.length) return processList(res);
+  } catch {}
 
   try {
-    results = await kitsu.getTopAnime(limit);
-    return processAnimeResults(results);
-  } catch (error) {
-    logError('Kitsu top', error);
+    const res = await anilist.getTopAnime(limit);
+    if (res.length) return processList(res);
+  } catch {}
+
+  try {
+    const res = await jikan.getTopAnime(page, limit);
+    if (res.length) return processList(res);
+  } catch {}
+
+  try {
+    return processList(await kitsu.getTopAnime(limit));
+  } catch {
     return [];
   }
 }
 
-// Current season with fallback
 export async function getSeasonalAnime(): Promise<Anime[]> {
-  let results: Anime[] = [];
+  try {
+    return processList(await jikan.getSeasonalAnime());
+  } catch {}
 
   try {
-    results = await jikan.getSeasonalAnime();
-    return processAnimeResults(results);
-  } catch (error) {
-    logError('Jikan seasonal', error);
-  }
-
-  try {
-    results = await anilist.getSeasonalAnime();
-    return processAnimeResults(results);
-  } catch (error) {
-    logError('AniList seasonal', error);
+    return processList(await anilist.getSeasonalAnime());
+  } catch {
     return [];
   }
 }
 
-// Trending anime - Consumet first
-export async function getTrendingAnime(page: number = 1, limit: number = 24): Promise<Anime[]> {
+export async function getTrendingAnime(page = 1, limit = 24): Promise<Anime[]> {
   try {
-    const results = await consumet.getTrendingAnime(page, limit);
-    if (results.length > 0) {
-      return processAnimeResults(results);
-    }
-  } catch (error) {
-    logError('Consumet trending', error);
-  }
+    const res = await consumet.getTrendingAnime(page, limit);
+    if (res.length) return processList(res);
+  } catch {}
 
-  // Fallback to Kitsu
   try {
-    const results = await kitsu.getTrendingAnime();
-    return processAnimeResults(results);
-  } catch (error) {
-    logError('Kitsu trending', error);
+    return processList(await kitsu.getTrendingAnime());
+  } catch {
     return getTopAnime(1, limit);
   }
 }
 
-// Recommendations (Jikan only) with processing
 export async function getRecommendations(id: number): Promise<Anime[]> {
   try {
-    const results = await jikan.getRecommendations(id);
-    return processAnimeResults(results);
-  } catch (error) {
-    logError('Jikan recommendations', error);
+    return processList(await jikan.getRecommendations(id));
+  } catch {
     return [];
   }
 }
 
-// Related anime - all seasons, sequels, prequels
 export async function getRelatedAnime(id: number) {
   try {
     return await jikan.getAnimeRelations(id);
-  } catch (error) {
-    logError('Jikan relations', error);
+  } catch {
     return [];
   }
 }
 
-// Anime by genre (Jikan only) with processing
-export async function getAnimeByGenre(genreId: number, limit: number = 24): Promise<Anime[]> {
+export async function getAnimeByGenre(genreId: number, limit = 24): Promise<Anime[]> {
   try {
-    const results = await jikan.getAnimeByGenre(genreId, limit);
-    return processAnimeResults(results);
-  } catch (error) {
-    logError('Jikan by genre', error);
+    return processList(await jikan.getAnimeByGenre(genreId, limit));
+  } catch {
     return [];
   }
 }
 
-// Get random anime
-export async function getRandomAnime(count: number = 1): Promise<Anime[]> {
+export async function getRandomAnime(count = 1): Promise<Anime[]> {
   try {
-    const topAnime = await getTopAnime(1, 100);
-    const shuffled = topAnime.sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, count);
-  } catch (error) {
-    logError('Random anime', error);
+    const top = await getTopAnime(1, 100);
+    return top.sort(() => 0.5 - Math.random()).slice(0, count);
+  } catch {
     return [];
   }
 }
 
-// Recent episodes with new releases
-export async function getRecentEpisodes(page: number = 1, limit: number = 24): Promise<Anime[]> {
+export async function getRecentEpisodes(page = 1, limit = 24): Promise<Anime[]> {
   try {
-    const results = await consumet.getRecentEpisodes(page, limit);
-    return processAnimeResults(results);
-  } catch (error) {
-    logError('Consumet recent', error);
+    return processList(await consumet.getRecentEpisodes(page, limit));
+  } catch {
     return getSeasonalAnime();
   }
 }
 
-// Advanced search with filters (Consumet)
 export async function advancedSearch(params: {
   query?: string;
   type?: string;
@@ -248,41 +153,29 @@ export async function advancedSearch(params: {
   perPage?: number;
 }): Promise<Anime[]> {
   try {
-    const results = await consumet.advancedSearch(params);
-    return processAnimeResults(results);
-  } catch (error) {
-    logError('Consumet advanced search', error);
-    // Fallback to basic search
-    if (params.query) {
-      return searchAnime(params.query, params.perPage || 24);
-    }
+    return processList(await consumet.advancedSearch(params));
+  } catch {
+    if (params.query) return searchAnime(params.query, params.perPage || 24);
     return getTopAnime(params.page || 1, params.perPage || 24);
   }
 }
 
-// Get weekly schedule (Consumet - all airing)
 export async function getWeeklySchedule() {
   try {
     return await consumet.getWeeklySchedule();
-  } catch (error) {
-    logError('Consumet weekly schedule', error);
+  } catch {
     return [];
   }
 }
 
-// Get popular anime schedule (Jikan - top ongoing only)
 export async function getPopularSchedule() {
   try {
     return await jikan.getPopularSchedule();
-  } catch (error) {
-    logError('Jikan popular schedule', error);
+  } catch {
     return [];
   }
 }
 
-// Re-export schedule types
 export type { ScheduleItem } from './consumet';
 export type { JikanScheduleItem } from './jikan';
-
-// Export individual APIs for direct access
 export { jikan, anilist, kitsu, consumet };
