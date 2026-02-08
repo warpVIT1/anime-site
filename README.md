@@ -68,6 +68,18 @@ src/
 - `npm run lint` - Run ESLint
 - `npm run type-check` - Run TypeScript check
 
+## Known Issues
+
+### Video Player Not Working
+The embedded video player currently does not work properly. I spent 3 days trying to configure various embed providers (2embed, VidSrc, AutoEmbed) but couldn't get them to function correctly due to:
+- CORS blocking
+- 403 Forbidden responses
+- Embeds not loading
+
+**Workaround:** The player shows external links to streaming sites (HiAnime, AniWave, etc.) as a fallback.
+
+If you know how to fix this, contributions are welcome!
+
 ## License
 
 MIT

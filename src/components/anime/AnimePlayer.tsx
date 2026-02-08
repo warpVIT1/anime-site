@@ -1,5 +1,17 @@
 'use client';
 
+/**
+ * AnimePlayer Component
+ * @author warpVIT
+ *
+ * WARNING: This player is NOT WORKING properly!
+ * I spent 3 days trying to configure the embed providers but couldn't get them to work.
+ * The embeds either get blocked by CORS, return 403, or just don't load at all.
+ * If you know how to fix this - please help lol
+ *
+ * TODO: Find working embed solution or integrate direct video streaming
+ */
+
 import { useState, useEffect, useRef } from 'react';
 
 interface AnimePlayerProps {
